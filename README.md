@@ -1,6 +1,6 @@
 # blackjack
 
-Our class spent nearly 3 days covering this assignment. I'm still not 100% finished but will keep polishing this game.
+Our class spent nearly 3 days covering this assignment.
 
 As of May 16, 2016 my biggest breakthrough is finidng a better way to sort through the images of the cards rather than manually typing out all 52 values in an array. This was done using a "for-loop" and .push methods in an array like this:
 
