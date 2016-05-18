@@ -1,76 +1,67 @@
-var dealerHand = [];
-var playerHand = [];
 
-function newDeck(){
-  var deck = [];
-  var words = ["ace", "king", "queen", "jack", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",]
-  for (var i = 0; i<13; i++){
-    deck.push({point: words[i], suit: 'Spades'})
-    deck.push({point: words[i], suit: 'Hearts'})
-    deck.push({point: words[i], suit: 'Clubs'})
-    deck.push({point: words[i], suit: 'Diamonds'})
-  }
-  return deck;
+function Card(point, suit) {
+  this.point = point;
+  this.suit = suit;
 }
 
-function getCardImageUrl(card) {
-  var cardName;
-  if(card.point ===1){
-    cardName ='ace';
-  } else if (card.point ===11){
-    cardName ='jack';
-  }else if (card.point ===11){
-    cardName ='queen';
-  }else if (card.point ===11){
-    cardName ='king';
-  }else{
-    cardName =card.point
+Card.prototype.getPointName = function() {
+  if (this.point === 1) {
+    return 'ace';
+  } else if (this.point === 11) {
+    return 'jack';
+  } else if (this.point === 12) {
+    return 'queen';
+  } else if (this.point === 13) {
+    return 'king';
+  } else {
+    return String(this.point);
   }
-  return 'images/' + cardName + card.suit + '.png'
+};
+
+Card.prototype.getImageUrl = function() {
+  return 'images/' + this.getPointName() + '_of_' + this.suit + '.png';
+};
+
+function Deck() {
+  this.cards = [];
+  for (var i = 1; i <= 13; i++) {
+    this.cards.push(new Card(i, 'spades'));
+    this.cards.push(new Card(i, 'hearts'));
+    this.cards.push(new Card(i, 'clubs'));
+    this.cards.push(new Card(i, 'diamonds'));
+  }
 }
 
+Deck.prototype.draw = function() {
+  return this.cards.pop();
+};
 
+Deck.prototype.numCards = function() {
+  return this.cards.length;
+};
 
-function shuffle(deck){
+Deck.prototype.shuffle = function () {
   var newDeck = [];
-  while(deck.length> 0){
+  var deck = this.cards;
+  while (deck.length > 0) {
     var idx = Math.floor(Math.random() * deck.length);
     var card = deck[idx];
     newDeck.push(card);
-    deck.splice(idx,1);
+    deck.splice(idx, 1);
   }
-  return newDeck;
+  this.cards = newDeck;
+};
+
+function Hand() {
+  this.cards = [];
 }
 
+Hand.prototype.addCard = function(card) {
+  this.cards.push(card);
+};
 
-function resetGame() {
-  deck= shuffle(newDeck());
-  dealerHand = [];
-  playerHand = [];
-  $('#playerPoints').text("");
-  $('#dealerPoints').text("");
-  $('#messages').text("");
-  $('#playerHand').html("");
-  $('#dealerHand').html("");
-}
-
-function dealCard(hand, element) {
-  var card = deck.pop();
-  hand.push(card);
-  // Draw a card at random from middle of the deck
-
-  var idx = Math.floor(Math.random() * deck.length);
-  var card = deck[idx];
-  console.log('Before: deck has ' + deck.length + ' cards.');
-  deck.splice(idx, 1);
-  console.log('After: deck has ' + deck.length + ' cards.');
-
-  var url = getCardImageUrl(card);
-  var cardHTML = '<img class="card" src="' + url + '"/>';
-  $(element).append(cardHTML);
-}
-
-function calculatePoints(hand) {
+Hand.prototype.getPoints = function() {
+  var hand = this.cards;
   // makes a copy of the hand array, so we don't modify it
   hand = hand.slice(0);
 
@@ -95,58 +86,99 @@ function calculatePoints(hand) {
     }
   }
   return sum;
+};
+
+var deck = new Deck();
+deck.shuffle();
+
+var dealerHand = new Hand();
+var playerHand = new Hand();
+
+function resetGame() {
+  deck = new Deck();
+  deck.shuffle();
+  dealerHand = new Hand();
+  playerHand = new Hand();
+  $('#player-points').text('');
+  $('#dealer-points').text('');
+  $('#messages').text('');
+  $('#player-hand').html('');
+  $('#dealer-hand').html('');
 }
 
+function dealCard(hand, element) {
+  var card = deck.draw();
+  hand.addCard(card);
+  var url = card.getImageUrl();
+  var cardHTML = '<img class="card" src="' + url + '"/>';
+  $(element).append(cardHTML);
+}
 
+/*
+displayPoints - calculate the points using hand.getPoints for both the dealer and player. And it will update the display with those points #dealer-points and #player-points.
+*/
+function displayPoints() {
+  var dealerPoints = dealerHand.getPoints();
+  $('#dealer-points').text(dealerPoints);
+  var playerPoints = playerHand.getPoints();
+  $('#player-points').text(playerPoints);
+}
 
-
-function checkForBust() {
-  var playerPoints = calculatePoints(playerHand);
+/*
+checkForBusts - get points using hand.getPoints function for both the dealer and player, and display message when someone busts. Returns true if there was a bust, and false otherwise.
+*/
+function checkForBusts() {
+  var playerPoints = playerHand.getPoints();
   if (playerPoints > 21) {
-    $('#messages').text("BUSTED");
+    $('#messages').text('You busted. Better luck next time!');
     return true;
   }
-  var dealerPoints = calculatePoints(dealerHand);
+  var dealerPoints = dealerHand.getPoints();
   if (dealerPoints > 21) {
-    $('#messages').text("Dealer Busted");
+    $('#messages').text('Dealer busted. You win!');
     return true;
   }
   return false;
 }
 
-$(function() {
+$(function () {
 
-  $('#dealButton').click(function() {
+  $('#deal-button').click(function () {
     resetGame();
-    dealCard(playerHand, '#playerHand');
-    dealCard(dealerHand, '#dealerHand');
-    dealCard(playerHand, '#playerHand');
-    dealCard(dealerHand, '#dealerHand');
-    checkForBust();
+    dealCard(playerHand, '#player-hand');
+    dealCard(dealerHand, '#dealer-hand');
+    dealCard(playerHand, '#player-hand');
+    dealCard(dealerHand, '#dealer-hand');
+    displayPoints();
+    checkForBusts();
   });
 
-  $('#hitButton').click(function() {
-    dealCard(playerHand, '#playerHand')
-    checkForBust();
+  $('#hit-button').click(function () {
+    dealCard(playerHand, '#player-hand');
+    displayPoints();
+    checkForBusts();
   });
 
-  $('#standButton').click(function() {
-    var dealerPoints = calculatePoints(dealerHand);
+  $('#stand-button').click(function () {
+    var dealerPoints = dealerHand.getPoints();
     while (dealerPoints < 17) {
-      dealCard(dealerHand, '#dealerHand');
-      dealerPoints = calculatePoints(dealerHand);
+      dealCard(dealerHand, '#dealer-hand');
+      dealerPoints = dealerHand.getPoints();
     }
-    if (!checkForBust()) {
-      var playerPoints = calculatePoints(playerHand);
-      var dealerPoints = calculatePoints(dealerHand);
+    displayPoints();
+    if (!checkForBusts()) {
+      // determine the winner
+      var playerPoints = playerHand.getPoints();
+      var dealerPoints = dealerHand.getPoints();
       if (playerPoints > dealerPoints) {
-        $('#messages').text('You Won!');
+        $('#messages').text('You won!');
       } else if (playerPoints === dealerPoints) {
         $('#messages').text('Push');
       } else {
-        $('#messages').text('You Lose!');
+        $('#messages').text('You lose!');
       }
     }
+
   });
 
 });
